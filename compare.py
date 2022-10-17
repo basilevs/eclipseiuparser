@@ -1,11 +1,10 @@
 #!/bin/python3
-from feature import feature_include_graph
+from feature import include_graph, find_node_by_id
 from sys import argv
-from pprint import pprint
 from functools import cache
 from networkx import descendants
 
-g = feature_include_graph('.')
+g = include_graph('.')
 
 def get_plugins(f):
 	return g.nodes[f].get('plugins', frozenset())
@@ -32,15 +31,8 @@ def print_sorted(data):
 #	print_sorted(content(s))
 		
 
-def find_node_by_id(id):
-	result = [p+id for p in ['', 'plugin:', 'feature:', 'product:'] if g.has_node(p+id)]
-	if len(result) > 1:
-		raise KeyError("Multiple elements found: " + result)
-	if not result: 
-		raise KeyError("Can't find " + id)
-	return result[0] 
 
-subjects = set([ find_node_by_id(arg) for arg in argv[1:] ])
+subjects = set([ find_node_by_id(g, arg) for arg in argv[1:] ])
 
 for s in subjects:
 	print('Included only in', s, ':')
@@ -63,5 +55,5 @@ for s in subjects:
 	
 
 
-print('Shared:')
-print_sorted(content(next(iter(subjects))).intersection(*[content(i) for i in subjects]))
+#print('Shared:')
+#print_sorted(content(next(iter(subjects))).intersection(*[content(i) for i in subjects]))
