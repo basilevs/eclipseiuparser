@@ -1,35 +1,14 @@
 #!/bin/python3
-from feature import include_graph, find_node_by_id
+from feature import include_graph, find_node_by_id, print_sorted
 from sys import argv
 from functools import cache
 from networkx import descendants
 
 g = include_graph('.')
 
-def get_plugins(f):
-	return g.nodes[f].get('plugins', frozenset())
-
-@cache
-def plugins(id):
-	result = set()
-	result.update(*[ get_plugins(f) for f in included_features(id)])
-	return result
-
-
 @cache
 def content(id):
-#	return plugins(id)
 	return set(descendants(g, id))
-	
-def print_sorted(data):
-	for line in sorted(data):
-		print(line)
-	
-
-#for s in subjects:
-#	print('Content in', s)
-#	print_sorted(content(s))
-		
 
 
 subjects = set([ find_node_by_id(g, arg) for arg in argv[1:] ])

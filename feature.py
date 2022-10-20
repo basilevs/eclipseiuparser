@@ -10,19 +10,13 @@ from networkx import DiGraph
 
 
 
-def find_feature_files(path):
-	return Path(path).rglob("feature.xml")
-	
-def find_product_files(path):
-	return Path(path).rglob("*.product")
-
-
 def parse_feature_xml(file):
 	tree = ElementTree.parse(file)
 	return (
 		tree.getroot().attrib['id'],
+		[node.attrib['id'] for node in tree.findall("plugin") or []],
 		[node.attrib['id'] for node in tree.findall("includes") or []],
-		[node.attrib['id'] for node in tree.findall("plugin") or []]
+		[]
 	)
 
 def read_manifest_lines(file):
@@ -57,7 +51,7 @@ def parse_manifest(file):
 			require.extend(parse_require(m.group(1)))
 	if not id1:
 		raise UnsupportedFormat("No Bundle-SymbolicName")
-	return (id1, require)
+	return (id1, [], [], require)
 
 
 #org.eclipse.core.runtime, com.google.guava, com.fnfr.open.common, com.fnfr.open.runtime.activation, org.apache.commons.lang;bundle-version="2.6.0"
@@ -76,51 +70,41 @@ def parse_product_xml(file):
 	tree = ElementTree.parse(file)
 	return (
 		tree.getroot().attrib['id'],
+		[node.attrib['id'] for node in tree.findall("plugins/plugin") or []],
 		[node.attrib['id'] for node in tree.findall("features/feature") or []],
-		[node.attrib['id'] for node in tree.findall("plugins/plugin") or []]
+		[]
 	)
 
-def get_feature(path, id):
-	for f in find_feature_files(path):
-		feature = parse_feature_xml(open(f, 'r'))
-		if feature[0] == id:
-			return feature[1:]
-	raise KeyError("Feature {} was not found in {}".format(id, path))
 
-
-def include_graph(path):
+def include_graph(path, include_dependencies=True):
 	g = DiGraph()
-	def add_children(node, features, plugins, file):
-		g.add_node(node)
-		g.nodes[node]['file'] = file
-		for plugin in plugins:
-			g.add_edge(node, "plugin:"+plugin)
-		for feature in features:
-			g.add_edge(node, "feature:"+feature)
-	for f in find_feature_files('.'):
-		id, features, plugins = parse_feature_xml(open(f, 'r'))
-		node = "feature:"+id
-		add_children(node, features, plugins, f)
-	for f in find_product_files('.'):
-		id, features, plugins = parse_product_xml(open(f, 'r'))
-		node = 'product:'+id
-		add_children(node, features, plugins, f)
-	for f in Path(path).rglob("MANIFEST.MF"):
-		try:
-			id, plugins = parse_manifest(open(f, 'r'))
-			node = 'plugin:'+id
-			add_children(node, [], plugins, f)
-		except UnsupportedFormat:
-			print('Failed to parse', f)
-		except:
-			raise ValueError('Failed to parse ' + str(f))
+	def process_glob(path, globexpression, parser, prefix):
+		for f in Path(path).rglob(globexpression):
+			try:
+				id, plugins, features, plugin_dependencies = parser(open(f, 'r'))
+				node = prefix+":"+id
+				if include_dependencies:
+					plugins = plugins + plugin_dependencies
+				g.add_node(node)
+				g.nodes[node]['file'] = f
+				for plugin in plugins:
+					g.add_edge(node, "plugin:"+plugin)
+				for feature in features:
+					g.add_edge(node, "feature:"+feature)
+			except UnsupportedFormat:
+				pass
+			except:
+				raise ValueError('Failed to parse ' + str(f))
+	process_glob(path, 'feature.xml', parse_feature_xml, 'feature')
+	process_glob(path, '*.product', parse_product_xml, 'product')
+	process_glob(path, 'META-INF/MANIFEST.MF', parse_manifest, 'plugin')
 	return g
 
 
 def find_node_by_id(g, id):
 	result = [p+id for p in ['', 'plugin:', 'feature:', 'product:'] if g.has_node(p+id)]
 	if len(result) > 1:
-		raise KeyError("Multiple elements found: " + result)
+		raise KeyError("Multiple elements found: " + str(result))
 	if not result: 
 		raise KeyError("Can't find " + id)
 	return result[0] 
@@ -129,6 +113,10 @@ def find_node_by_id(g, id):
 def print_sorted(data):
 	for line in sorted(data):
 		print(line)
+
+def print_sorted_with_meta(graph, nodes):
+	for node in sorted(nodes):
+		print (node, '\t', graph.nodes[node]['file'])
 
 
 if __name__ == '__main__':
