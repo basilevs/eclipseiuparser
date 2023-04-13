@@ -4,7 +4,7 @@ from sys import argv
 from functools import cache
 from networkx import descendants
 
-g = include_graph('.')
+g = include_graph('.', include_dependencies = True)
 
 @cache
 def content(id):
@@ -12,6 +12,10 @@ def content(id):
 
 
 subjects = set([ find_node_by_id(g, arg) for arg in argv[1:] ])
+
+
+print("Shared dependencies:")
+print_sorted(set.intersection(*[content(subject) for subject in subjects])) 
 
 for s in subjects:
 	print('Included only in', s, ':')
