@@ -23,6 +23,9 @@ def compare_by(content, label):
             included.difference_update(content(another))
         print_sorted(included)
 
+    if (len(subjects) <= 2):
+        return
+    
     all_content = frozenset(
         [c for subject in subjects for c in content(subject)])
 
