@@ -8,7 +8,7 @@ def print_sorted(data):
 	for line in sorted(data):
 		print(line)
 		
-g = include_graph('.', include_dependencies=False)
+g = include_graph('.', include_dependencies=True)
 
 def content(id):
 	return set(descendants(g, id))

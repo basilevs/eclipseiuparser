@@ -69,7 +69,7 @@ def parse_require(line):
 def parse_product_xml(file):
 	tree = ElementTree.parse(file)
 	return (
-		tree.getroot().attrib['id'],
+		tree.getroot().attrib['uid'],
 		[node.attrib['id'] for node in tree.findall("plugins/plugin") or []],
 		[node.attrib['id'] for node in tree.findall("features/feature") or []],
 		[]
@@ -80,6 +80,10 @@ def include_graph(path, include_dependencies=True):
 	g = DiGraph()
 	def process_glob(path, globexpression, parser, prefix):
 		for f in Path(path).rglob(globexpression):
+			# Do not use temporary copies produced by previous builds
+			# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
+			if not f.parent.joinpath('.project').exists():
+				continue
 			try:
 				id, plugins, features, plugin_dependencies = parser(open(f, 'r'))
 				node = prefix+":"+id
