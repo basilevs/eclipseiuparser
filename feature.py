@@ -12,8 +12,9 @@ from networkx import DiGraph
 
 def parse_feature_xml(file):
 	tree = ElementTree.parse(file)
+	id = tree.getroot().attrib['id']
 	return (
-		tree.getroot().attrib['id'],
+		id,
 		[node.attrib['id'] for node in tree.findall("plugin") or []],
 		[node.attrib['id'] for node in tree.findall("includes") or []],
 		[]
@@ -75,14 +76,20 @@ def parse_product_xml(file):
 		[]
 	)
 
+def is_derived_file(path):
+	# Do not use temporary copies produced by previous builds
+	# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
+	if path.parent.joinpath('.project').exists():
+		return False
+	if path.parent.name == 'META-INF':
+		return path.parent.parent.joinpath('.project').exists()
+	return True
 
 def include_graph(path, include_dependencies=True):
 	g = DiGraph()
 	def process_glob(path, globexpression, parser, prefix):
 		for f in Path(path).rglob(globexpression):
-			# Do not use temporary copies produced by previous builds
-			# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
-			if not f.parent.joinpath('.project').exists():
+			if is_derived_file(f):
 				continue
 			try:
 				id, plugins, features, plugin_dependencies = parser(open(f, 'r'))
