@@ -82,7 +82,7 @@ def is_derived_file(path):
 	if path.parent.joinpath('.project').exists():
 		return False
 	if path.parent.name == 'META-INF':
-		return path.parent.parent.joinpath('.project').exists()
+		return not path.parent.parent.joinpath('.project').exists()
 	return True
 
 def include_graph(path, include_dependencies=True):
