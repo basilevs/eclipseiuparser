@@ -54,12 +54,26 @@ def parse_manifest(file):
 		raise UnsupportedFormat("No Bundle-SymbolicName")
 	return (id1, [], [], require)
 
+def split_by_comma(input_string):
+    result = []
+    current = []
+    in_quotes = False
+    for char in input_string:
+        if char == '"':
+            in_quotes = not in_quotes
+            current.append(char)
+        elif char == ',' and not in_quotes:
+            yield ''.join(current)
+            current = []
+        else:
+            current.append(char)
+    yield ''.join(current)
 
 #org.eclipse.core.runtime, com.google.guava, com.fnfr.open.common, com.fnfr.open.runtime.activation, org.apache.commons.lang;bundle-version="2.6.0"
-_idPattern = compile(r'\s*([a-z\\.]+)(?:;.*)?')
+_idPattern = compile(r'\s*([A-Za-z\\.]+)(?:;.*)?')
 def parse_require(line):
 	result = []
-	for entry in line.split(", "):
+	for entry in split_by_comma(line):
 		m = _idPattern.match(entry)
 		if not m:
 			raise ValueError("Can parse Require-Bundle: " + entry + ".")
@@ -90,6 +104,8 @@ def include_graph(path, include_dependencies=True):
 	def process_glob(path, globexpression, parser, prefix):
 		for f in Path(path).rglob(globexpression):
 			if is_derived_file(f):
+				continue
+			if f.is_dir():
 				continue
 			try:
 				id, plugins, features, plugin_dependencies = parser(open(f, 'r'))
