@@ -1,26 +1,35 @@
 #!/bin/python3
 
+from io import TextIOWrapper
 from xml.etree import ElementTree
-from xml.etree.ElementTree import XMLParser
+from xml.etree.ElementTree import Element, XMLParser
 from re import compile
 from uuid import uuid1
 from os.path import dirname, abspath, join
 from pathlib import Path
-from networkx import DiGraph
+from zipfile import ZipFile
+from networkx import DiGraph # python3 -m pip install networkx  
 
 
+def _feature_import_to_id(node: Element):
+	try:
+		return 'feature:'+node.attrib['feature']
+	except KeyError:
+		return 'plugin:'+node.attrib['plugin']
 
 def parse_feature_xml(file):
 	tree = ElementTree.parse(file)
 	id = tree.getroot().attrib['id']
 	return (
-		id,
+		'feature:' + id,
 		[node.attrib['id'] for node in tree.findall("plugin") or []],
 		[node.attrib['id'] for node in tree.findall("includes") or []],
-		[]
+		#  <import feature="org.eclipse.ecf.core.feature" version="1.4.0" match="compatible"/>
+		[_feature_import_to_id(node) for node in tree.findall("requires/import") or []],
 	)
 
 def read_manifest_lines(file):
+	file = TextIOWrapper(file, encoding='utf-8')
 	result = ""
 	for line in file.readlines():
 		if line and line.startswith(" "):
@@ -49,13 +58,12 @@ def parse_manifest(file):
 			continue
 		m = _requirePattern.match(line)
 		if m:
-			require.extend(parse_require(m.group(1)))
+			require.extend(['plugin:' + id for id in parse_require(m.group(1))])
 	if not id1:
 		raise UnsupportedFormat("No Bundle-SymbolicName")
-	return (id1, [], [], require)
+	return ('plugin:' + id1, [], [], require)
 
 def split_by_comma(input_string):
-    result = []
     current = []
     in_quotes = False
     for char in input_string:
@@ -84,47 +92,60 @@ def parse_require(line):
 def parse_product_xml(file):
 	tree = ElementTree.parse(file)
 	return (
-		tree.getroot().attrib['uid'],
+		'product:' + tree.getroot().attrib['uid'],
 		[node.attrib['id'] for node in tree.findall("plugins/plugin") or []],
 		[node.attrib['id'] for node in tree.findall("features/feature") or []],
 		[]
 	)
+
+def parse_jar(file):
+	with ZipFile(file) as zip:
+		try:
+			with zip.open('feature.xml') as feature:
+				return parse_feature_xml(feature)
+		except KeyError:
+			pass
+	raise UnsupportedFormat()
 
 def is_derived_file(path):
 	# Do not use temporary copies produced by previous builds
 	# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
 	if path.parent.joinpath('.project').exists():
 		return False
+	if (path.parent.parent.parent / 'iTest.ini').exists():
+		return False 
 	if path.parent.name == 'META-INF':
 		return not path.parent.parent.joinpath('.project').exists()
 	return True
 
 def include_graph(path, include_dependencies=True):
 	g = DiGraph()
-	def process_glob(path, globexpression, parser, prefix):
+	def process_glob(globexpression, parser):
 		for f in Path(path).rglob(globexpression):
 			if is_derived_file(f):
 				continue
 			if f.is_dir():
 				continue
 			try:
-				id, plugins, features, plugin_dependencies = parser(open(f, 'r'))
-				node = prefix+":"+id
-				if include_dependencies:
-					plugins = plugins + plugin_dependencies
+				id, plugins, features, dependencies = parser(open(f, 'rb'))
+				node = id
 				g.add_node(node)
 				g.nodes[node]['file'] = f
 				for plugin in plugins:
 					g.add_edge(node, "plugin:"+plugin)
 				for feature in features:
 					g.add_edge(node, "feature:"+feature)
+				if include_dependencies:
+					for dep in dependencies:
+						g.add_edge(node, dep)
 			except UnsupportedFormat:
 				pass
 			except:
 				raise ValueError('Failed to parse ' + str(f))
-	process_glob(path, 'feature.xml', parse_feature_xml, 'feature')
-	process_glob(path, '*.product', parse_product_xml, 'product')
-	process_glob(path, 'META-INF/MANIFEST.MF', parse_manifest, 'plugin')
+	process_glob('feature.xml', parse_feature_xml)
+	process_glob('*.product', parse_product_xml)
+	process_glob('META-INF/MANIFEST.MF', parse_manifest)
+	process_glob('features/*.jar', parse_jar)
 	return g
 
 
@@ -144,8 +165,3 @@ def print_sorted(data):
 def print_sorted_with_meta(graph, nodes):
 	for node in sorted(nodes):
 		print (node, '\t', graph.nodes[node]['file'])
-
-
-if __name__ == '__main__':
-	for f in find_feature_files('.'):
-		print(parse_feature_xml(open(f, 'r')))

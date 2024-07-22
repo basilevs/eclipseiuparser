@@ -8,9 +8,9 @@ from pprint import pprint
 from networkx import DiGraph, descendants, ancestors, induced_subgraph, subgraph, spiral_layout, multipartite_layout, spectral_layout, spring_layout, kamada_kawai_layout, draw_networkx_nodes, draw_networkx_edges, draw_networkx_labels
 from matplotlib import pyplot
 from pathlib import Path
-from feature import find_feature_files, parse_feature_xml, include_graph, find_node_by_id
+from feature import parse_feature_xml, include_graph, find_node_by_id
 
-g = include_graph('.')
+g = include_graph('.', include_dependencies=True)
 
 @cache
 def content(id):
