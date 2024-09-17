@@ -27,11 +27,13 @@ if __name__ == '__main__':
 
 	result = set()
 	origin_nodes = map(lambda id:  find_node_by_id(g, id), argv[1:])
-	exclude_nodes = map(lambda id:  find_node_by_id(g, id), exclude)
+	exclude_nodes = set(map(lambda id:  find_node_by_id(g, id), exclude))
+	
+	for node in list(exclude_nodes):
+		exclude_nodes.update(content(node))
 	
 	#remove excluded nodes from the graph
-	for node in exclude_nodes:
-		g.remove_node(node)
+	g.remove_nodes_from(exclude_nodes)
 
 	for origin in origin_nodes:
 		if result:
