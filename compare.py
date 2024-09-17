@@ -1,5 +1,5 @@
 #!/bin/python3
-from feature import include_graph, find_node_by_id, print_sorted
+from feature import include_graph, find_node_by_id
 from sys import argv
 from functools import cache
 from networkx import descendants, ancestors
@@ -9,6 +9,14 @@ g = include_graph('.', include_dependencies=True)
 
 subjects = set([find_node_by_id(g, arg) for arg in argv[1:]])
 
+def count_dependencies(id):
+	return len(set(descendants(g, id)))
+
+def print_sorted(iterable):
+    content = sorted(iterable, key=count_dependencies, reverse=True)
+    for line in content:
+        print(line)
+    print()
 
 def compare_by(content, label):
     print("Common", label + ":")

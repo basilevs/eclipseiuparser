@@ -33,7 +33,7 @@ def read_manifest_lines(file):
 	result = ""
 	for line in file.readlines():
 		if line and line.startswith(" "):
-			result += line.rstrip("\r\n")
+			result += line.rstrip("\r\n").lstrip(' ')
 		else:
 			yield result
 			result = line.rstrip("\r\n")
