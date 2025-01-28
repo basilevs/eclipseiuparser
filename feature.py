@@ -1,5 +1,5 @@
 #!/bin/python3
-
+from functools import partial
 from io import TextIOWrapper
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, XMLParser
@@ -48,7 +48,7 @@ class UnsupportedFormat(Exception) :
 	pass 
 
 
-def parse_manifest(file):
+def parse_manifest(file, include_optional: bool):
 	id1 = None
 	require = []	
 	for line in read_manifest_lines(file):
@@ -58,7 +58,7 @@ def parse_manifest(file):
 			continue
 		m = _requirePattern.match(line)
 		if m:
-			require.extend(['plugin:' + id for id in parse_require(m.group(1))])
+			require.extend(['plugin:' + id for id in parse_require(m.group(1), include_optional)])
 	if not id1:
 		raise UnsupportedFormat("No Bundle-SymbolicName")
 	return ('plugin:' + id1, [], [], require)
@@ -79,12 +79,14 @@ def split_by_comma(input_string):
 
 #org.eclipse.core.runtime, com.google.guava, com.fnfr.open.common, com.fnfr.open.runtime.activation, org.apache.commons.lang;bundle-version="2.6.0"
 _idPattern = compile(r'\s*([A-Za-z\\.]+)(?:;.*)?')
-def parse_require(line):
+def parse_require(line, include_optional: bool):
 	result = []
 	for entry in split_by_comma(line):
 		m = _idPattern.match(entry)
 		if not m:
 			raise ValueError("Can parse Require-Bundle: " + entry + ".")
+		if not include_optional and ';resolution:=optional' in entry:
+			continue
 		result.append(m.group(1))
 	return result
 			
@@ -98,11 +100,16 @@ def parse_product_xml(file):
 		[]
 	)
 
-def parse_jar(file):
+def parse_jar(file, include_optional: bool):
 	with ZipFile(file) as zip:
 		try:
 			with zip.open('feature.xml') as feature:
 				return parse_feature_xml(feature)
+		except KeyError:
+			pass
+		try:
+			with zip.open('META-INF/MANIFEST.MF') as manifest:
+				return parse_manifest(manifest, include_optional)
 		except KeyError:
 			pass
 	raise UnsupportedFormat()
@@ -110,6 +117,7 @@ def parse_jar(file):
 def is_derived_file(path):
 	# Do not use temporary copies produced by previous builds
 	# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
+	return False
 	if path.parent.joinpath('.project').exists():
 		return False
 	if (path.parent.parent.parent / 'iTest.ini').exists():
@@ -118,7 +126,7 @@ def is_derived_file(path):
 		return not path.parent.parent.joinpath('.project').exists()
 	return True
 
-def include_graph(path, include_dependencies=True):
+def include_graph(path, include_dependencies=True, include_optional=False):
 	g = DiGraph()
 	def process_glob(globexpression, parser):
 		for f in Path(path).rglob(globexpression):
@@ -144,8 +152,9 @@ def include_graph(path, include_dependencies=True):
 				raise ValueError('Failed to parse ' + str(f))
 	process_glob('feature.xml', parse_feature_xml)
 	process_glob('*.product', parse_product_xml)
-	process_glob('META-INF/MANIFEST.MF', parse_manifest)
-	process_glob('features/*.jar', parse_jar)
+	process_glob('META-INF/MANIFEST.MF', lambda f: parse_manifest(f, include_optional))
+	process_glob('features/*.jar', lambda f: parse_jar(f, include_optional))
+	process_glob('plugins/*.jar', lambda f: parse_jar(f, include_optional))
 	return g
 
 
