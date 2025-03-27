@@ -114,17 +114,15 @@ def parse_jar(file, include_optional: bool):
 			pass
 	raise UnsupportedFormat()
 
-def is_derived_file(path):
+def is_derived_file(path: Path):
 	# Do not use temporary copies produced by previous builds
 	# Like ./product/com.spirent.product.ndo/target/products/com.spirent.ndo.cli.OptimizedAgentProduct/win32/win32/x86_64/nda/features/com.spirent.features.resources-lite_9.4.0.202306021011/feature.xml
-	return False
+	for i in path.parents:
+		if i.name in ["resources", "testData", "target", "tests", "testdata"]:
+			return True
 	if path.parent.joinpath('.project').exists():
 		return False
-	if (path.parent.parent.parent / 'iTest.ini').exists():
-		return False 
-	if path.parent.name == 'META-INF':
-		return not path.parent.parent.joinpath('.project').exists()
-	return True
+	return False
 
 def include_graph(path, include_dependencies=True, include_optional=False):
 	g = DiGraph()
