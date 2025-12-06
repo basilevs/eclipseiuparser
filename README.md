@@ -13,7 +13,7 @@ Unit can be bundle, feature or product (from "installation unit", a P2 term)
 Navigate to your Eclipse Platform application sources:
 
 ```
-cd ~/git/<my_application>
+$ cd ~/git/<my_application>
 ```
 
 ## Where
@@ -21,7 +21,7 @@ cd ~/git/<my_application>
 `where <plugin_id>` prints a list of features including a plugin:
 
 ```
-command where org.eclipse.pde.core
+$ command where org.eclipse.pde.core
 feature:org.eclipse.rcptt.runner.headless 	 runner/features/org.eclipse.rcptt.runner.runner-feature/feature.xml
 ```
 Dependencies are not included. To work with indirect dependencies use `rdepends`.
