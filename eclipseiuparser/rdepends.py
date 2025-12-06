@@ -12,7 +12,7 @@ def content(id):
     return set(ancestors(g, id))
 
 
-if __name__ == '__main__':
+def main():
     result = set()
     for i in argv[1:]:
         result.update(content(find_node_by_id(g, i)))
@@ -24,3 +24,6 @@ if __name__ == '__main__':
     sorted.sort(key=distance_from_root)
     for node in sorted:
         print(node)
+
+if __name__ == '__main__':
+	main()

@@ -15,8 +15,7 @@ def content(source, target):
 	result.add(target)
 	return result
 
-
-if __name__ == '__main__':
+def main():
 	result = set()
 	origin_nodes = map(lambda id:  find_node_by_id(g, id), argv[1:])
 	for i, k in permutations(origin_nodes, 2):
@@ -30,3 +29,6 @@ if __name__ == '__main__':
 	sorted.sort(key=distance_from_root)
 	for node in sorted:
 		print (node)
+
+if __name__ == '__main__':
+	main()

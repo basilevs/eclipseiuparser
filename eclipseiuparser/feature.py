@@ -1,11 +1,8 @@
 #!/bin/python3
-from functools import partial
 from io import TextIOWrapper
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element, XMLParser
 from re import compile
-from uuid import uuid1
-from os.path import dirname, abspath, join
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 from pathlib import Path
 from zipfile import ZipFile
 from networkx import DiGraph # python3 -m pip install networkx  

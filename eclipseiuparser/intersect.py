@@ -19,7 +19,10 @@ def distance_from_root(node):
 def count_dependencies(id):
 	return len(set(descendants(g, id)))
 
-content = sorted(content, key=distance_from_root)
+def main():
+	content = sorted(content, key=distance_from_root)
+	for line in content:
+		print(line)
 
-for line in content:
-	print(line)
+if __name__ == '__main__':
+    main()

@@ -16,8 +16,7 @@ def content(node):
 	result.add(node)
 	return result
 
-
-if __name__ == '__main__':
+def main():
 	# parse command line argument --exclude
 	exclude = set()
 	for i, arg in enumerate(argv):
@@ -55,3 +54,7 @@ if __name__ == '__main__':
 			print(node, '\t', proxy.get('file', ''))
 		except:
 			raise ValueError("Failed to process " + node)
+
+
+if __name__ == '__main__':
+	main()

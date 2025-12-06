@@ -8,13 +8,16 @@ def print_sorted(data):
 	for line in sorted(data):
 		print(line)
 		
-g = include_graph('.', include_dependencies=True)
+g = include_graph('.', include_dependencies=False)
 
 def content(id):
 	return set(descendants(g, id))
 
-if __name__ == '__main__':
+def main():
 	result = set()
 	for i in argv[1:]:
 		result.update(content(find_node_by_id(g, i)))
 	print_sorted(result)
+
+if __name__ == '__main__':
+	main()
