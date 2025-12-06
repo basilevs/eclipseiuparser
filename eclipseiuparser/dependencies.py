@@ -1,5 +1,5 @@
 #!/bin/python3
-from feature import include_graph, find_node_by_id
+from .feature import include_graph, find_node_by_id
 from sys import argv
 from pprint import pprint
 from networkx import descendants

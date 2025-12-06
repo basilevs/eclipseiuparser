@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eclipseiuparser"
-version = "2020.0.0"
+version = "0.0.1"
 dependencies = [
   "networkx>2.8.7",
 ]

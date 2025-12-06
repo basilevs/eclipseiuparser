@@ -1,4 +1,4 @@
-from feature import parse_feature_xml
+from .feature import parse_feature_xml
 from sys import argv
 
 def main():

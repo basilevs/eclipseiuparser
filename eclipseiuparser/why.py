@@ -1,6 +1,6 @@
 #!/bin/python3
 from functools import cache
-from feature import include_graph, find_node_by_id
+from .feature import include_graph, find_node_by_id
 from sys import argv
 from networkx import ancestors, descendants
 from itertools import permutations
