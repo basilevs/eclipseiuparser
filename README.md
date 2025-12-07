@@ -5,7 +5,7 @@ $ . venv/bin/activate
 $ pip install eclipseiuparser@git+https://github.com/basilevs/eclipseiuparser.git
 ```
 
-# Terms
+# Definitions
 Unit can be bundle, feature or product (from "installation unit", a P2 term)
 
 # Use
